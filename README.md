@@ -1,3 +1,3 @@
-# JFiniteElements
+# JFiniteElements.jl
+Some finite element functionality using the Julia language
 
-[![Build Status](https://travis-ci.org/rckirby/JFiniteElements.jl.svg?branch=master)](https://travis-ci.org/rckirby/JFiniteElements.jl)
