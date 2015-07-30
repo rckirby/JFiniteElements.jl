@@ -232,9 +232,134 @@ function poissonquad(x, A)
     end
 end
 
+# This fixes some of the allocation problems by not using the operators
+# and writing explicit loops for the transformation/dot products
+
+function poissontri2(x, A)
+    Nqp = 1
+    Nbf = 3
+
+    # First, compute the Jacobian.  In this case, it's constant
+    J = reshape([[x[1,2] - x[1,1], x[2,2] - x[2,1]];
+                 [x[1,3] - x[1,1], x[2,3] - x[2,1]]], 2, 2)
+    detJ = det(J)
+    Jinv = inv(J)
+
+    # Next, tabulate the basis function gradients at qp.  We'll have
+    # gradients are two-dimensional here, there is one quadrature point,
+    # and there are three basis functions.  That explains the size of
+    # this array 
+    DPsi = zeros(2, Nqp, Nbf)
+    DPsi[:,1,1] = [-1; -1]
+    DPsi[:,1,2] = [1; 0]
+    DPsi[:,1,3] = [0; 1]
+
+    DPsiPhysQP = zeros(2, Nbf)
+
+    w = [0.5]
+    
+    for q=1:Nqp
+        # transform gradients at q:th quadrature point
+        for i=1:Nbf
+            for j=1:2
+                DPsiPhysQP[j, i] = 0.0
+                for k=1:2
+                    DPsiPhysQP[j,i] += Jinv[k, j] * DPsi[k,q,i]
+                end
+            end
+        end
+        for i=1:Nbf
+            for j=1:Nbf
+                for k=1:2
+                    A[i, j] += w[q] * DPsiPhysQP[k,i] * DPsiPhysQP[k, j]
+                end
+            end
+        end
+    end
+    absdetJ = abs(detJ)
+    for j=1:Nbf
+        for i=1:Nbf
+            A[i,j] *= absdetJ
+        end
+    end
+end
 
 #
 ########
+
+# This is a stab at pre-setting the quadrature rule, basis function values, and preallocating space in Poisson on a triangle.
+
+function makepoissontri()
+    Nqp = 1
+    Nbf = 3
+
+    # Allocate space for Jacobian and its inverse and determinant
+
+    J = zeros(2, 2)
+    adetJ::Float64 = 0.0
+    detJ::Float64 = 0.0
+    Jinv = zeros(2, 2)
+    i::Int = 0
+    j::Int = 0
+    k::Int = 0
+    q::Int = 0
+
+    # quadrature information is baked in.  One-point midpoint rule
+    w = [0.5]
+    quadpts = reshape([1./3, 1./3], 2, 1)
+
+    # Next, tabulate the basis function gradients at qp.  We'll have
+    # gradients are two-dimensional here, there is one quadrature point,
+    # and there are three basis functions.  That explains the size of
+    # this array 
+    DPsi = zeros(2, Nqp, Nbf)
+    DPsi[:,1,1] = [-1; -1]
+    DPsi[:,1,2] = [1; 0]
+    DPsi[:,1,3] = [0; 1]
+
+    DPsiPhysQP = zeros(2, Nbf)
+
+    function f(x, A)
+        # Write the Jacobian into pre-allocated space
+        J[1,1] = x[1,2] - x[1,1]
+        J[1,2] = x[2,2] - x[2,1]
+        J[2,1] = x[1,3] - x[1,1]
+        J[2,2] = x[2,3] - x[2,1]
+        detJ = J[1,1] * J[2,2] - J[1,2] * J[2,1]
+        Jinv[1,1] = J[2,2] / detJ
+        Jinv[1,2] = -J[1,2] / detJ
+        Jinv[2,1] = -J[2,1] / detJ
+        Jinv[2,2] = J[1,1] / detJ
+
+        for q=1:Nqp
+            # transform gradients at q:th quadrature point
+            for i=1:Nbf
+                for j=1:2
+                    DPsiPhysQP[j, i] = 0.0
+                    for k=1:2
+                        DPsiPhysQP[j,i] += Jinv[k, j] * DPsi[k,q,i]
+                    end
+                end
+            end
+            for i=1:Nbf
+                for j=1:Nbf
+                    for k=1:2
+                        A[i, j] += w[q] * DPsiPhysQP[k,i] * DPsiPhysQP[k, j]
+                    end
+                end
+            end
+        end
+        # Since the Jacobian determinant is constant, we apply it here.
+        adetJ = detJ < 0 ? -detJ : detJ
+        for i=1:Nbf
+            for j=1:Nbf
+                A[i, j] *= adetJ
+            end
+        end
+    end
+    
+    return f
+end
 
 
 end # module
