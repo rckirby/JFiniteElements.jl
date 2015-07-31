@@ -74,21 +74,27 @@ abstract PointSet
 # at points.  I could parameterize the type?
 abstract QuadratureRule
 
-type UFCTriangleMidpointRule <: QuadratureRule
-    x::Array
-    w::Array
-end
+immutable TriangleMidpointRule <: QuadratureRule end
+immutable TriangleVertexRule <: QuadratureRule end
+immutable TriangleEdgeRule <: QuadratureRule end
 
-function UFCTriangleMidpointRule()
-    x = reshape([1./3, 1./3], 2, 1)
-    w = [0.5]
-    UFCTriangleMidpointRule(x, w)
-end
+getQuadratureWtsPts(T::TriangleMidpointRule) = 
+  ( [0.5], reshape([1./3, 1./3], 2, 1))
 
+numQuadraturePoints(T::TriangleMidpointRule) = 1
 
-function getPointsAndWeights(Q::QuadratureRule)
-    error("Not implemented on abstract class")
-end
+getQuadratureWtsPts(T::TriangleVertexRule) =
+    ( [1./6, 1./6, 1./6], reshape([0 0 1 0 0 1.], 2, 3))
+
+numQuadraturePoints(T::TriangleVertexRule) = 3
+
+getQuadratureWtsPts(T::TriangleVertexRule) =
+    ([1./6, 1./6, 1./6], reshape([0 0 1 0 0 1.], 2, 3))
+
+numQuadraturePoints(T::TriangleEdgeRule) = 3
+
+getQuadratureWtsPts(T::TriangleEdgeRule) =
+    ([1./6, 1./6, 1./6], reshape([0.5 0 0.5 0.5 0 0.5], 2, 3))
 
 
 #
@@ -289,8 +295,9 @@ end
 
 # This is a stab at pre-setting the quadrature rule, basis function values, and preallocating space in Poisson on a triangle.
 
-function makepoissontri()
-    Nqp = 1
+function makepoissontri(Q)
+    Nqp = numQuadraturePoints(Q)
+    w, quadpts = getQuadratureWtsPts(Q)
     Nbf = 3
 
     # Allocate space for Jacobian and its inverse and determinant
@@ -305,17 +312,17 @@ function makepoissontri()
     q::Int = 0
 
     # quadrature information is baked in.  One-point midpoint rule
-    w = [0.5]
-    quadpts = reshape([1./3, 1./3], 2, 1)
 
     # Next, tabulate the basis function gradients at qp.  We'll have
     # gradients are two-dimensional here, there is one quadrature point,
     # and there are three basis functions.  That explains the size of
     # this array 
     DPsi = zeros(2, Nqp, Nbf)
-    DPsi[:,1,1] = [-1; -1]
-    DPsi[:,1,2] = [1; 0]
-    DPsi[:,1,3] = [0; 1]
+    for q=1:Nqp
+        DPsi[:,q,1] = [-1; -1]
+        DPsi[:,q,2] = [1; 0]
+        DPsi[:,q,3] = [0; 1]
+    end
 
     DPsiPhysQP = zeros(2, Nbf)
 
