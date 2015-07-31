@@ -1,6 +1,6 @@
 module JFiniteElements
 
-export Triangulation, boxMesh
+export Triangulation, boxMesh, poissontri
 
 type Triangulation
     x
