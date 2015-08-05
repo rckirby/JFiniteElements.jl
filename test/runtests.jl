@@ -5,3 +5,5 @@ using Base.Test
 @test 1 == 1
 
 include("testTriangulation.jl")
+
+include("testAssembly.jl")
