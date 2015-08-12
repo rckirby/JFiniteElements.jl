@@ -3,8 +3,7 @@ module JFiniteElements
 export Triangulation, boxMesh, poissontri
 
 type Triangulation
-    x
-    T
+    x    T
 end
 
 function boxMesh(a, b, c, d, Nx, Ny)
@@ -319,24 +318,24 @@ function makepoissontri(Q)
     # this array 
     DPsi = zeros(2, Nqp, Nbf)
     for q=1:Nqp
-        DPsi[:,q,1] = [-1; -1]
-        DPsi[:,q,2] = [1; 0]
-        DPsi[:,q,3] = [0; 1]
+        @inbounds DPsi[:,q,1] = [-1; -1]
+        @inbounds DPsi[:,q,2] = [1; 0]
+        @inbounds DPsi[:,q,3] = [0; 1]
     end
 
     DPsiPhysQP = zeros(2, Nbf)
 
     function f(x, A)
         # Write the Jacobian into pre-allocated space
-        J[1,1] = x[1,2] - x[1,1]
-        J[1,2] = x[2,2] - x[2,1]
-        J[2,1] = x[1,3] - x[1,1]
-        J[2,2] = x[2,3] - x[2,1]
-        detJ = J[1,1] * J[2,2] - J[1,2] * J[2,1]
-        Jinv[1,1] = J[2,2] / detJ
-        Jinv[1,2] = -J[1,2] / detJ
-        Jinv[2,1] = -J[2,1] / detJ
-        Jinv[2,2] = J[1,1] / detJ
+        @inbounds J[1,1] = x[1,2] - x[1,1]
+        @inbounds J[1,2] = x[2,2] - x[2,1]
+        @inbounds J[2,1] = x[1,3] - x[1,1]
+        @inbounds J[2,2] = x[2,3] - x[2,1]
+        @inbounds detJ = J[1,1] * J[2,2] - J[1,2] * J[2,1]
+        @inbounds Jinv[1,1] = J[2,2] / detJ
+        @inbounds Jinv[1,2] = -J[1,2] / detJ
+        @inbounds Jinv[2,1] = -J[2,1] / detJ
+        @inbounds Jinv[2,2] = J[1,1] / detJ
 
         for q=1:Nqp
             # transform gradients at q:th quadrature point
@@ -344,14 +343,14 @@ function makepoissontri(Q)
                 for j=1:2
                     DPsiPhysQP[j, i] = 0.0
                     for k=1:2
-                        DPsiPhysQP[j,i] += Jinv[k, j] * DPsi[k,q,i]
+                        @inbounds DPsiPhysQP[j,i] += Jinv[k, j] * DPsi[k,q,i]
                     end
                 end
             end
             for i=1:Nbf
                 for j=1:Nbf
                     for k=1:2
-                        A[i, j] += w[q] * DPsiPhysQP[k,i] * DPsiPhysQP[k, j]
+                        @inbounds A[i, j] += w[q] * DPsiPhysQP[k,i] * DPsiPhysQP[k, j]
                     end
                 end
             end
@@ -360,7 +359,7 @@ function makepoissontri(Q)
         adetJ = detJ < 0 ? -detJ : detJ
         for i=1:Nbf
             for j=1:Nbf
-                A[i, j] *= adetJ
+               @inbounds A[i, j] *= adetJ
             end
         end
     end

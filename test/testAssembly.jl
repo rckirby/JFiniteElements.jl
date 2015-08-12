@@ -18,7 +18,7 @@ function buildit(M, f)
         # extract/pack cell vertex coordinates
         for i=1:3
             for j=1:2
-                cellcoords[j,i] = M.x[j, M.T[i,c]]
+                @inbounds cellcoords[j,i] = M.x[j, M.T[i,c]]
             end
         end
         # local stiffness matrix
@@ -26,8 +26,8 @@ function buildit(M, f)
         # and global/local coords
         for i=1:3
             for j=1:3
-                rows[i,j,c] = TT[i,c]
-                cols[i,j,c] = TT[j,c]
+                @inbounds rows[i,j,c] = TT[i,c]
+                @inbounds cols[i,j,c] = TT[j,c]
             end
         end
     end
@@ -76,39 +76,34 @@ function buildit3(M, f)
     Ael = zeros(3,3)
     TT = M.T
 
-#    globalN = maximum(TT)
-#    A = Array{Dict{Int, Float64}}(globalN)
-#    for i=1:globalN
-#        A[i] = Dict{Int,Float64}()
-#    end
 
     for c=1:nT
         # extract/pack cell vertex coordinates
         for i=1:3
             for j=1:2
-                cellcoords[j,i] = M.x[j, M.T[i,c]]
+                @inbounds cellcoords[j,i] = M.x[j, M.T[i,c]]
             end
         end
         # local stiffness matrix
         for i=1:3
             for j=1:3
-                Ael[i,j] = 0.0
+                @inbounds Ael[i,j] = 0.0
             end
         end
         f(cellcoords, Ael)
-#        for i=1:3
-#            Irow = TT[i,c]
-#            for j=1:3
-#                Jcol = TT[j,c]
-#                if haskey(A[Irow], Jcol)
-#                    A[Irow][Jcol] += Ael[i,j]
-#                else
-#                    A[Irow][Jcol] = Ael[i,j]
-#                end
-#            end
-#        end
+        for i=1:3
+            Irow = TT[i,c]
+            for j=1:3
+                Jcol = TT[j,c]
+                if haskey(A[Irow], Jcol)
+                    @inbounds A[Irow][Jcol] += Ael[i,j]
+                else
+                    @inbounds A[Irow][Jcol] = Ael[i,j]
+                end
+            end
+        end
     end
-#    return A
+    return A
 end
 
 @time buildit(M, f)
