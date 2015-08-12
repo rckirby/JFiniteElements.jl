@@ -1,9 +1,14 @@
 module JFiniteElements
 
+using Bases
+
+export Bases
+
 export Triangulation, boxMesh, poissontri
 
 type Triangulation
-    x    T
+    x    
+    T
 end
 
 function boxMesh(a, b, c, d, Nx, Ny)
