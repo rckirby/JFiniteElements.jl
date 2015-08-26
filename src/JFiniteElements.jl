@@ -53,16 +53,6 @@ end
 
 #######
 # Experimental type system.  We'll see if it works...
-#
-abstract Cell
-
-abstract Simplex <: Cell
-
-# We could get fancy and Vararg this, but pairs work fine?
-type TensorProduct{A, B} <: Cell
-    Cell1::A
-    Cell2::B
-end
 
 abstract CellMapping
 

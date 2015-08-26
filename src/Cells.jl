@@ -13,9 +13,8 @@ function comp(d, vals)
 end
 
 function concat(a::Tuple, b::Tuple)
-    alist = [ai for ai in a]
-    blist = [bi for bi in b]
-    clist = vcat(alist,blist)
+    clist = vcat([ai for ai in a],
+                 [bi for bi in b])
     return ntuple(length(clist), (i)->clist[i])
 end
              
@@ -51,7 +50,7 @@ immutable UFCSimplex{d} <: Simplex
         D[0] = [(i,) for i=1:d+1]
 
         # Q: Can we meta-program this to get the right number of
-        # of Tuple{Int,...} args?
+        # of Tuple{Int,...} args as the type of D[d-dim]?
         for dim=1:(d-1)
             off_verts = get_subsequences(1, d+1, dim)
             D[d-dim] = [comp(d+1, ov) for ov in off_verts]
@@ -64,6 +63,3 @@ immutable UFCSimplex{d} <: Simplex
 end
 
 end
-
-
-
