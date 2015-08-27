@@ -75,8 +75,7 @@ function buildit3(M, f)
     cellcoords = zeros(2, 3)
     Ael = zeros(3,3)
     TT = M.T
-
-
+    A = Dict()
     for c=1:nT
         # extract/pack cell vertex coordinates
         for i=1:3
@@ -93,6 +92,9 @@ function buildit3(M, f)
         f(cellcoords, Ael)
         for i=1:3
             Irow = TT[i,c]
+            if !haskey(A, Irow)
+                A[Irow] = Dict()
+            end
             for j=1:3
                 Jcol = TT[j,c]
                 if haskey(A[Irow], Jcol)
@@ -107,5 +109,5 @@ function buildit3(M, f)
 end
 
 @time buildit(M, f)
-#@time buildit2(M, f)
+@time buildit2(M, f)
 @time buildit3(M, f)

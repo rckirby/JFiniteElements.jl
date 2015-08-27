@@ -1,12 +1,12 @@
 module Cells
 
-export Cell, Simplex, UFCSimplex
+export Cell, Simplex, UFCSimplex, val2val, getSpatialDimension
 
 abstract Cell
 
-abstract Simplex{T} <: Cell
+abstract Simplex{T<:Val} <: Cell
 
-immutable UFCSimplex{T} <: Simplex{T} end
+immutable UFCSimplex{T<:Val} <: Simplex{T} end
 
 
 # helper functions used in UFC implementation
@@ -41,6 +41,9 @@ function get_subsequences(a, b, l)
     end
 end
 
+# How do I get the type argument to work on subtypes?
+getSpatialDimension{T}(::Type{UFCSimplex{T}}) = val2val(T)
+
 function getVertexCoords{T}(::Type{UFCSimplex{T}})
     d = val2val(T)
     x = zeros(d, d+1)
@@ -63,13 +66,10 @@ function getCellTopology{T}(::Type{UFCSimplex{T}})
         D[d-dim] = [comp(d+1, ov) for ov in off_verts]
     end
 
-    
     # cell itself is pretty easy
     D[d] = [ntuple((i)->i, d+1)]
     return D
 end
 
-# How do I get the type argument to work on subtypes?
-getSpatialDimension{T}(::Type{UFCSimplex{T}}) = val2val(T)
 
 end

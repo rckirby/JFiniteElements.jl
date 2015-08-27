@@ -7,3 +7,5 @@ using Base.Test
 include("testTriangulation.jl")
 
 include("testAssembly.jl")
+
+include("testCells.jl")

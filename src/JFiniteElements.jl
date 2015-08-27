@@ -1,7 +1,8 @@
 module JFiniteElements
 
-using Bases, Cells
-export Bases, Cells
+using Bases, Cells, PointSets
+export Bases, Cells, PointSets
+
 
 export Triangulation, boxMesh, poissontri
 
