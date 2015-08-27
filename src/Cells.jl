@@ -4,20 +4,24 @@ export Cell, Simplex, UFCSimplex
 
 abstract Cell
 
-abstract Simplex <: Cell
+abstract Simplex{T} <: Cell
 
-# returns complement of vals considered as a subsequence of (1...d)
+immutable UFCSimplex{T} <: Simplex{T} end
+
+
+# helper functions used in UFC implementation
 function comp(d, vals)
     x = filter((i)->!(i in vals), 1:d)
-    return ntuple(d-length(vals), (i)->x[i])
+    return ntuple((i)->x[i], d-length(vals))
 end
 
 function concat(a::Tuple, b::Tuple)
     clist = vcat([ai for ai in a],
                  [bi for bi in b])
-    return ntuple(length(clist), (i)->clist[i])
+    return ntuple((i)->clist[i], length(clist),)
 end
              
+val2val{d}(::Type{Val{d}}) = d
 
 # produces subsequences of a:b of length l,
 # sorted in lexicographic order
@@ -37,29 +41,35 @@ function get_subsequences(a, b, l)
     end
 end
 
-immutable UFCSimplex{d} <: Simplex
-    x::Array{Float64, 2}   # Vertices
-    D::Dict                # Topology
-    function UFCSimplex()
-        x = zeros(d, d+1)
-        for i=1:d
-            x[i,i+1] = 1.0
-        end
-
-        D = Dict()
-        D[0] = [(i,) for i=1:d+1]
-
-        # Q: Can we meta-program this to get the right number of
-        # of Tuple{Int,...} args as the type of D[d-dim]?
-        for dim=1:(d-1)
-            off_verts = get_subsequences(1, d+1, dim)
-            D[d-dim] = [comp(d+1, ov) for ov in off_verts]
-        end
-
-        # cell itself is pretty easy
-        D[d] = [ntuple(d+1, (i)->i)]
-        new(x, D)
+function getVertexCoords{T}(::Type{UFCSimplex{T}})
+    d = val2val(T)
+    x = zeros(d, d+1)
+    for i=1:d
+        x[i,i+1] = 1.0
     end
+    return x
 end
+
+function getCellTopology{T}(::Type{UFCSimplex{T}})
+    d = val2val(T)
+    
+    D = Dict()
+    D[0] = [(i,) for i=1:d+1]
+    
+    # Q: Can we meta-program this to get the right number of
+    # of Tuple{Int,...} as the type of D[d-dim]?
+    for dim=1:(d-1)
+        off_verts = get_subsequences(1, d+1, dim)
+        D[d-dim] = [comp(d+1, ov) for ov in off_verts]
+    end
+
+    
+    # cell itself is pretty easy
+    D[d] = [ntuple((i)->i, d+1)]
+    return D
+end
+
+# How do I get the type argument to work on subtypes?
+getSpatialDimension{T}(::Type{UFCSimplex{T}}) = val2val(T)
 
 end
