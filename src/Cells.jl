@@ -41,8 +41,17 @@ function get_subsequences(a, b, l)
     end
 end
 
-# How do I get the type argument to work on subtypes?
-getSpatialDimension{T}(::Type{UFCSimplex{T}}) = val2val(T)
+# This is how to get spatial dimension to work on subtypes, defining it
+# only on the leaf node in the hierarchy where we branch
+# I have a "rootleaf" that will say each kind of simplex is in fact a simplex,
+# then just provide the spatial dimension on "simplex".  I can do the same for
+# other kinds, I hope.
+getSpatialDimension{T}(::Type{Simplex{T}}) = val2val(T)
+getSpatialDimension{S}(::Type{S}) = getSpatialDimension(rootleaf(S))
+
+rootleaf{T}(::Type{UFCSimplex{T}}) = Simplex{T}
+
+
 
 function getVertexCoords{T}(::Type{UFCSimplex{T}})
     d = val2val(T)
