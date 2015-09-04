@@ -1,6 +1,6 @@
 module Cells
 
-export Cell, Simplex, UFCSimplex, val2val, getSpatialDimension
+export Cell, Simplex, UFCSimplex, val2val, getSpatialDimension, getVertexCoords
 
 abstract Cell
 
@@ -20,7 +20,7 @@ function concat(a::Tuple, b::Tuple)
                  [bi for bi in b])
     return ntuple((i)->clist[i], length(clist),)
 end
-             
+
 val2val{d}(::Type{Val{d}}) = d
 
 # produces subsequences of a:b of length l,
@@ -51,18 +51,18 @@ getSpatialDimension{S}(::Type{S}) = getSpatialDimension(rootleaf(S))
 
 rootleaf{T}(::Type{UFCSimplex{T}}) = Simplex{T}
 
-
-
-function getVertexCoords{T}(::Type{UFCSimplex{T}})
+# this is generated since it's once per type, so can
+# compute array at compile-time and return it at run-time.
+@generated function getVertexCoords{T}(::Type{UFCSimplex{T}})
     d = val2val(T)
     x = zeros(d, d+1)
     for i=1:d
         x[i,i+1] = 1.0
     end
-    return x
+    return :($x)
 end
 
-function getCellTopology{T}(::Type{UFCSimplex{T}})
+@generated function getCellTopology{T}(::Type{UFCSimplex{T}})
     d = val2val(T)
     
     D = Dict()
@@ -77,7 +77,7 @@ function getCellTopology{T}(::Type{UFCSimplex{T}})
 
     # cell itself is pretty easy
     D[d] = [ntuple((i)->i, d+1)]
-    return D
+    return :($D)
 end
 
 

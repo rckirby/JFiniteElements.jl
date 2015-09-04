@@ -12,19 +12,15 @@ immutable EquispacedLattice{C<:Cell, S<:Val} <: Lattice end
 
 rootleaf{S,T}(::Type{EquispacedLattice{S,T}}) = Lattice{S,T}
 
-# as we have other kinds of cells, we need to specify their rootleafs
-# and then dispatch on sizes.
-# unless we can get away with just adding via tensor products.
-
-function latticeSize{S<:Simplex,T<:Val}(::Type{Lattice{S,T}})
-    return latticeSize(getSpatialDimension(S),
-                       val2val(T))
-end
 
 latticeSize{T}(::Type{T}) = latticeSize(rootleaf(T))
 
-
-function latticeSize(dim, n)
+# This can be "generated" since it just needs to be run once per type.
+# After that, the first-time value will be returned.
+@generated function latticeSize{S<:Simplex,T<:Val}(::Type{Lattice{S,T}})
+    println("hi there")
+    dim = getSpatialDimension(S)
+    n = val2val(T)
     np = 1
     for d=1:dim
         np *= (n+d)
@@ -32,7 +28,17 @@ function latticeSize(dim, n)
     for d=1:dim
         np = div(np, d)
     end
-    return np
+    return :($np)
+end
+
+# Doesn't work yet.  Need an iterator over lattices in place first.
+function latticePoints{S<:Simplex, T<:Val}(::Type{EquispacedLattice{S,T}})
+    d = getSpatialDimension(S)
+    vs = getVertexCoords(S)
+    n = val2val(T)
+    hs = [(vs[i+1] - vs[1]) / n for i in range(1,d+1)]
+    
+    return
 end
 
 end
