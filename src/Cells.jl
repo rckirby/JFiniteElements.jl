@@ -8,6 +8,8 @@ abstract Simplex{T<:Val} <: Cell
 
 immutable UFCSimplex{T<:Val} <: Simplex{T} end
 
+immutable TensorProductCell{C1<:Cell, C2<:Cell} <: Cell end
+
 
 # helper functions used in UFC implementation
 function comp(d, vals)
@@ -48,8 +50,18 @@ end
 # other kinds, I hope.
 getSpatialDimension{T}(::Type{Simplex{T}}) = val2val(T)
 getSpatialDimension{S}(::Type{S}) = getSpatialDimension(rootleaf(S))
+function getSpatialDimension{C1,C2}(::Type{TensorProductCell{C1,C2}})
+    return getSpatialDimension(C1) + getSpatialDimension(C2)
+end
 
 rootleaf{T}(::Type{UFCSimplex{T}}) = Simplex{T}
+
+getNumVertices{T}(::Type{Simplex{T}}) = 1 + val2val(T)
+getNumVertices{S}(::Type{S}) = getNumVertices(rootleaf(S))
+function getNumVertices{C1,C2}(::TensorProductCell{C1,C2})
+    return getNumVertices(C1) * getNumVertices(C2)
+end
+
 
 # this is generated since it's once per type, so can
 # compute array at compile-time and return it at run-time.
@@ -80,5 +92,31 @@ end
     return :($D)
 end
 
+@generated function getVertexCoords{C1,C2}(::Type{TensorProductCell{C1,C2}})
+    coords1 = getVertexCoords(C1)
+    coords2 = getVertexCoords(C2)
+
+    sdim1 = getSpatialDimension(C1)
+    sdim2 = getSpatialDimension(C2)
+    sdim = sdim1 + sdim2
+    verts1 = getVertexCoords(C1)
+    verts2 = getVertexCoords(C2)
+    nverts1 = getNumVertices(C1)
+    nverts2 = getNumVertices(C2)
+
+    nverts = nverts1 * nverts2
+
+    verts = zeros(sdim, nverts)
+    vert_cur = 1
+    for i=1:nverts2
+        verts[(sdim1+1):(sdim1+sdim2),vert_cur] = verts2[:,i]
+        for j=1:nverts1
+            verts[1:sdim1,vert_cur] = verts1[:,j]
+            vert_cur += 1
+        end
+    end
+
+    return :($verts)
+end
 
 end

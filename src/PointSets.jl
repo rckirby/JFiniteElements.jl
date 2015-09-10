@@ -21,6 +21,7 @@ type2type{T}(::Type{Type{T}}) = T
 # This can be "generated" since it just needs to be run once per type.
 # After that, the first-time value will be returned.
 @generated function latticeSize{S<:Simplex,T<:Val}(::Type{Lattice{S,T}})
+    println("lattice size")
     dim = getSpatialDimension(S)
     n = val2val(T)
     np = 1
