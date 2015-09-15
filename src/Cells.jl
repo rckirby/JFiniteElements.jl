@@ -1,6 +1,10 @@
 module Cells
 
+import Base.*
+
 export Cell, Simplex, UFCSimplex, val2val, getSpatialDimension, getVertexCoords
+export TensorProductCell, getCellTopology, *
+
 
 abstract Cell
 
@@ -10,6 +14,7 @@ immutable UFCSimplex{T<:Val} <: Simplex{T} end
 
 immutable TensorProductCell{C1<:Cell, C2<:Cell} <: Cell end
 
+*{C1<:Cell, C2<:Cell}(::Type{C1}, ::Type{C2}) = TensorProductCell{C1,C2}
 
 # helper functions used in UFC implementation
 function comp(d, vals)
@@ -24,7 +29,6 @@ function concat(a::Tuple, b::Tuple)
 end
 
 val2val{d}(::Type{Val{d}}) = d
-type2type{T}(::Type{Type{T}}) = T
 
 
 # produces subsequences of a:b of length l,
