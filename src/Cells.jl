@@ -24,6 +24,8 @@ function concat(a::Tuple, b::Tuple)
 end
 
 val2val{d}(::Type{Val{d}}) = d
+type2type{T}(::Type{Type{T}}) = T
+
 
 # produces subsequences of a:b of length l,
 # sorted in lexicographic order
@@ -58,7 +60,7 @@ rootleaf{T}(::Type{UFCSimplex{T}}) = Simplex{T}
 
 getNumVertices{T}(::Type{Simplex{T}}) = 1 + val2val(T)
 getNumVertices{S}(::Type{S}) = getNumVertices(rootleaf(S))
-function getNumVertices{C1,C2}(::TensorProductCell{C1,C2})
+function getNumVertices{C1,C2}(::Type{TensorProductCell{C1,C2}})
     return getNumVertices(C1) * getNumVertices(C2)
 end
 
@@ -117,6 +119,39 @@ end
     end
 
     return :($verts)
+end
+
+# Note, internal facets may need to get swizzled to be in right order?
+@generated function getCellTopology{C1,C2}(typ::Type{TensorProductCell{C1,C2}})
+    D = Dict()
+    D1 = getCellTopology(C1)
+    D2 = getCellTopology(C2)
+    nv = getNumVertices(typ)
+    sd1 = getSpatialDimension(C1)
+    sd2 = getSpatialDimension(C2)
+    sd = getSpatialDimension(typ)
+    D[0] = [(i,) for i=1:nv]
+    
+    for k2 in keys(D2)
+        for k1 in keys(D1)
+            dim_cur = k1+k2
+            if !haskey(D, dim_cur)
+                D[dim_cur] = []
+            end
+            if dim_cur > 0 && dim_cur < sd
+                for f1 in D2[k2]
+                    for f2 in D1[k1]
+                        push!(D[dim_cur], (f1,f2))
+                    end
+                end
+            end
+        end
+    end
+
+    D[sd] = [ntuple((i)->i, sd)]
+
+    return :($D)
+
 end
 
 end
