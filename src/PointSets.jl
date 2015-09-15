@@ -2,7 +2,10 @@ module PointSets
 
 using Cells
 
-export EquispacedLattice, Lattice, PointSet, latticeSize
+import Base.*
+
+export EquispacedLattice, Lattice, PointSet, size, points
+export TensorProductLattice, *, BoundaryMidpointSet
 
 abstract PointSet
 
@@ -10,19 +13,56 @@ abstract Lattice{C<:Cell, S<:Val} <: PointSet
 
 immutable EquispacedLattice{C<:Cell, S<:Val} <: Lattice end
 
+immutable CellMidpointSet{C<:Cell} <: PointSet end
+
+immutable BoundaryMidpointSet{C<:Cell} <: PointSet end
+
+
 rootleaf{S,T}(::Type{EquispacedLattice{S,T}}) = Lattice{S,T}
-
-
-latticeSize{T}(::Type{T}) = latticeSize(rootleaf(T))
-
+size{T}(::Type{T}) = size(rootleaf(T))
 
 type2type{T}(::Type{Type{T}}) = T
 
-# This can be "generated" since it just needs to be run once per type.
-# After that, the first-time value will be returned.
-@generated function latticeSize{S<:Simplex,T<:Val}(::Type{Lattice{S,T}})
-    println("lattice size")
-    dim = getSpatialDimension(S)
+cellType{C<:Cell,S<:Val}(::Type{Lattice{C,S}}) = C
+cellType{T}(::Type{T}) = cellType(rootleaf(T))
+
+
+size{C<:Cell}(::Type{CellMidpointSet{C}}) = 1
+cellType{C<:Cell}(::Type{CellMidpointSet{C}}) = C
+@generated function points{C<:Cell}(::Type{CellMidpointSet{C}})
+    verts = getVertexCoords(C)
+    # average value of vertices is the midpoint.  Always true?
+    v0 = reshape(sum(verts, 2) / size(verts,2))
+    return :($v0)
+end
+
+@generated function size{C<:Cell}(::Type{BoundaryMidpointSet{C}})
+    D = getCellTopology(C)
+    sd = spatialDimension(C)
+    sz = len(D[sd-1])
+    return :($sz)
+end
+
+@generated function points{C<:Cell}(::Type{BoundaryMidpointSet{C}})
+    verts = getVertexCoords(C)
+    D = getCellTopology(C)
+    sd = spatialDimension(C)
+    num_bd_facets = length(D[sd-1])
+    bmps = zeros(sd, num_bd_facets)
+    for k=1:num_bd_facets
+        vert_ids = D[sd-1][k]
+        facet_size = length(vert_ids)
+        for j=1:facet_size
+            bmps[:,k] += verts[:, vert_ids[j]]
+        end
+        bmps[:,k] /= facet_size
+    end
+    return :($bmps)
+    
+end
+
+@generated function size{S<:Simplex,T<:Val}(::Type{Lattice{S,T}})
+    dim = spatialDimension(S)
     n = val2val(T)
     np = 1
     for d=1:dim
@@ -55,13 +95,13 @@ function makeLatticeLogic(a, b, depth)
     end
 end
 
-@generated function latticePoints{S<:Simplex, T<:Val}(typ::Type{EquispacedLattice{S,T}})
-    d = getSpatialDimension(S)
+@generated function points{S<:Simplex, T<:Val}(typ::Type{EquispacedLattice{S,T}})
+    d = spatialDimension(S)
     vs = getVertexCoords(S)
     n = val2val(T)
     hs = [(vs[:,i+1] - vs[:,1]) / n for i=1:d]
     icoords = makeLatticeLogic(1, n+1, d)
-    results = zeros(d, latticeSize(type2type(typ)))
+    results = zeros(d, size(type2type(typ)))
     pt_cur = 1
     for ii in icoords
         coord_cur = vs[:,1]
@@ -74,5 +114,9 @@ end
     
     return :($results)
 end
+
+# now handle tensor products of lattices, which may be slightly
+# different from a lattice on a tensor product (e.g. different number
+# of points per direction?
 
 end

@@ -2,7 +2,7 @@ module Cells
 
 import Base.*
 
-export Cell, Simplex, UFCSimplex, val2val, getSpatialDimension, getVertexCoords
+export Cell, Simplex, UFCSimplex, val2val, spatialDimension, getVertexCoords
 export TensorProductCell, getCellTopology, *
 
 
@@ -54,10 +54,10 @@ end
 # I have a "rootleaf" that will say each kind of simplex is in fact a simplex,
 # then just provide the spatial dimension on "simplex".  I can do the same for
 # other kinds, I hope.
-getSpatialDimension{T}(::Type{Simplex{T}}) = val2val(T)
-getSpatialDimension{S}(::Type{S}) = getSpatialDimension(rootleaf(S))
-function getSpatialDimension{C1,C2}(::Type{TensorProductCell{C1,C2}})
-    return getSpatialDimension(C1) + getSpatialDimension(C2)
+spatialDimension{T}(::Type{Simplex{T}}) = val2val(T)
+spatialDimension{S}(::Type{S}) = spatialDimension(rootleaf(S))
+function spatialDimension{C1,C2}(::Type{TensorProductCell{C1,C2}})
+    return spatialDimension(C1) + spatialDimension(C2)
 end
 
 rootleaf{T}(::Type{UFCSimplex{T}}) = Simplex{T}
@@ -102,8 +102,8 @@ end
     coords1 = getVertexCoords(C1)
     coords2 = getVertexCoords(C2)
 
-    sdim1 = getSpatialDimension(C1)
-    sdim2 = getSpatialDimension(C2)
+    sdim1 = spatialDimension(C1)
+    sdim2 = spatialDimension(C2)
     sdim = sdim1 + sdim2
     verts1 = getVertexCoords(C1)
     verts2 = getVertexCoords(C2)
@@ -131,9 +131,9 @@ end
     D1 = getCellTopology(C1)
     D2 = getCellTopology(C2)
     nv = getNumVertices(typ)
-    sd1 = getSpatialDimension(C1)
-    sd2 = getSpatialDimension(C2)
-    sd = getSpatialDimension(typ)
+    sd1 = spatialDimension(C1)
+    sd2 = spatialDimension(C2)
+    sd = spatialDimension(typ)
     D[0] = [(i,) for i=1:nv]
     
     for k2 in keys(D2)
