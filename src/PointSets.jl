@@ -5,7 +5,7 @@ using Cells
 import Base.*
 
 export EquispacedLattice, Lattice, PointSet, size, points
-export TensorProductLattice, *, BoundaryMidpointSet
+export TensorProductPointSet, *, BoundaryMidpointSet
 
 abstract PointSet
 
@@ -17,6 +17,7 @@ immutable CellMidpointSet{C<:Cell} <: PointSet end
 
 immutable BoundaryMidpointSet{C<:Cell} <: PointSet end
 
+immutable TensorProductPointSet{P1<:PointSet, P2<:PointSet} end
 
 rootleaf{S,T}(::Type{EquispacedLattice{S,T}}) = Lattice{S,T}
 size{T}(::Type{T}) = size(rootleaf(T))
@@ -115,8 +116,19 @@ end
     return :($results)
 end
 
-# now handle tensor products of lattices, which may be slightly
-# different from a lattice on a tensor product (e.g. different number
-# of points per direction?
+# tensor products
+@generated function size{P1<:PointSet, P2<:PointSet}(::Type{TensorProductPointSet{P1,P2}}) 
+    s = size(P1) * size(P2)
+    return :($s)
+end
+
+@generated function cellType{P1<:PointSet, P2<:PointSet}(::Type{TensorProductPointSet{P1,P2}})
+    ct = cellType(P1) * cellType(P2)
+    return :($ct)
+end
+
+@generated function points{P1<:PointSet, P2<:PointSet}(::Type{TensorProductPointSet{P1,P2}})
+
+end
 
 end
