@@ -14,7 +14,6 @@ abstract Lattice{C<:Cell, S<:Val} <: PointSet
 immutable EquispacedLattice{C<:Cell, S<:Val} <: Lattice end
 
 immutable CellMidpointSet{C<:Cell} <: PointSet end
-
 immutable BoundaryMidpointSet{C<:Cell} <: PointSet end
 
 immutable TensorProductPointSet{P1<:PointSet, P2<:PointSet} end

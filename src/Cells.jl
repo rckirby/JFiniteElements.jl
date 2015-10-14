@@ -29,7 +29,7 @@ function concat(a::Tuple, b::Tuple)
 end
 
 val2val{d}(::Type{Val{d}}) = d
-
+type2type{T}(::Type{Type{T}}) = T
 
 # produces subsequences of a:b of length l,
 # sorted in lexicographic order
@@ -56,8 +56,9 @@ end
 # other kinds, I hope.
 spatialDimension{T}(::Type{Simplex{T}}) = val2val(T)
 spatialDimension{S}(::Type{S}) = spatialDimension(rootleaf(S))
-function spatialDimension{C1,C2}(::Type{TensorProductCell{C1,C2}})
-    return spatialDimension(C1) + spatialDimension(C2)
+@generated function spatialDimension{C1,C2}(::Type{TensorProductCell{C1,C2}})
+    d = spatialDimension(C1) + spatialDimension(C2)
+    return :($d)
 end
 
 rootleaf{T}(::Type{UFCSimplex{T}}) = Simplex{T}
@@ -130,10 +131,11 @@ end
     D = Dict()
     D1 = getCellTopology(C1)
     D2 = getCellTopology(C2)
-    nv = getNumVertices(typ)
+    println(typ,type2type(typ))
+    nv = getNumVertices(type2type(typ))
     sd1 = spatialDimension(C1)
     sd2 = spatialDimension(C2)
-    sd = spatialDimension(typ)
+    sd = spatialDimension(type2type(typ))
     D[0] = [(i,) for i=1:nv]
     
     for k2 in keys(D2)
