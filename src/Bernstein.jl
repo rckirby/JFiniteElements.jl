@@ -1,6 +1,6 @@
 module Bernstein
 
-export berntuples, flattuples, stroud_eval1d, stroud_eval2d, evalmat
+export berntuples, flattuples, stroud_eval1d, stroud_eval2d, evalmat, elevation_matrix
 
 iter2list(a) = [a[i] for i=1:length(a)]
 
@@ -183,7 +183,7 @@ end
 function stroud_integrate1d(deg, vals, result, qpts, qwts)
     nqp1d = size(qwts, 1)
     result[:] = 0.0
-    for i=1:nqp1d:
+    for i=1:nqp1d
         xi = qpts[i,1]
         s = 1 - xi
         r = xi / s
@@ -227,7 +227,8 @@ function stroud_integrate2d(deg, vals, result, qpts, qwts)
                 w = w * r * (deg-a1-a2) / (1. + a2)
             end
         end
-
+        
+    end
     return
 end
 
@@ -265,7 +266,7 @@ function stroud_eval3d(deg, vals, result, qpts, qwts)
             end
         end
     end
-
+    
     for i3=1:nqp1d
         xi = qpts[i3, 3]
         s = 1.0 - xi
@@ -281,10 +282,32 @@ function stroud_eval3d(deg, vals, result, qpts, qwts)
             end
         end
     end
-
-                    
-
+    
     return
+end
+
+function inc_alpha(a, i)
+    alist = [a[j] for j=1:length(a)]
+    alist[i] += 1
+    return ntuple((j)->alist[j], length(alist))
+end
+
+function elevation_matrix(sdim, deg)
+    bts_low = berntuples(sdim, deg-1)
+    inds_high = berntuple_indices(sdim, deg)
+
+    E = zeros(polydim(sdim, deg), polydim(sdim, deg-1))
+
+    for j=1:length(bts_low)
+        a = bts_low[j]
+        for i=1:sdim+1
+            aup = inc_alpha(a,i)
+            E[inds_high[aup], j] = (a[i] + 1) / deg
+        end
+    end
+
+    return E
+        
 end
 
 end
