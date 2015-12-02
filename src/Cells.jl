@@ -54,6 +54,7 @@ rootleaf{T}(::Type{UFCSimplex{T}}) = Simplex{T}
 # this is generated since it's once per type, so can
 # compute array at compile-time and return it at run-time.
 @generated function getVertexCoords{T}(::Type{UFCSimplex{T}})
+    println("hi there")
     d = val2val(T)
     x = zeros(d, d+1)
     for i=1:d
