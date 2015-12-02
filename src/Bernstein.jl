@@ -1,6 +1,6 @@
 module Bernstein
 
-export berntuples, flattuples, stroud_eval1d, stroud_eval2d, evalmat, elevation_matrix
+export berntuples, flattuples, stroud_eval1d, stroud_eval2d, evalmat, elevation_matrix, derivative_matrix, barycentric_gradients
 
 iter2list(a) = [a[i] for i=1:length(a)]
 
@@ -292,6 +292,12 @@ function inc_alpha(a, i)
     return ntuple((j)->alist[j], length(alist))
 end
 
+function dec_alpha(a, i)
+    alist = [a[j] for j=1:length(a)]
+    alist[i] -= 1
+    return ntuple((j)->alist[j], length(alist))
+end
+
 function elevation_matrix(sdim, deg)
     bts_low = berntuples(sdim, deg-1)
     inds_high = berntuple_indices(sdim, deg)
@@ -309,5 +315,46 @@ function elevation_matrix(sdim, deg)
     return E
         
 end
+
+function derivative_matrix(sdim, deg, direction, verts)
+    bts_deg = berntuples(sdim, deg)
+    inds_low = berntuple_indices(sdim, deg-1)
+
+    bgrads = barycentric_gradients(verts)
+
+    D = zeros(polydim(sdim, deg-1), polydim(sdim, deg))
+    for j=1:polydim(sdim, deg)
+        a = bts_deg[j]
+        for k=1:sdim+1
+            if a[k] > 0
+                D[inds_low[dec_alpha(a, k)], j] = deg * bgrads[direction, k]
+            end
+        end
+    end
+
+    return D        
+
+end
+
+
+function barycentric_gradients(verts)
+    sd = size(verts, 1)
+    M = zeros(sd+1, sd+1)
+    for p=1:sd+1
+        M[p, 1] = 1.0
+        for d=1:sd
+            M[p, d+1] = verts[d, p]
+        end
+    end
+    Minv = inv(M)
+    grads = zeros(sd, sd+1)
+    for p=1:sd+1
+        for d=1:sd
+            grads[d,p] = Minv[d+1, p]
+        end
+    end
+    return grads
+end
+
 
 end
