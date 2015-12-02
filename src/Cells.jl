@@ -1,6 +1,10 @@
 module Cells
 
-export Cell, Simplex, UFCSimplex, val2val, getSpatialDimension, getVertexCoords
+import Base.*
+
+export Cell, Simplex, UFCSimplex, val2val, spatialDimension, getVertexCoords
+export TensorProductCell, getCellTopology, *
+
 
 abstract Cell
 
@@ -8,6 +12,9 @@ abstract Simplex{T<:Val} <: Cell
 
 immutable UFCSimplex{T<:Val} <: Simplex{T} end
 
+immutable TensorProductCell{C1<:Cell, C2<:Cell} <: Cell end
+
+*{C1<:Cell, C2<:Cell}(::Type{C1}, ::Type{C2}) = TensorProductCell{C1,C2}
 
 # helper functions used in UFC implementation
 function comp(d, vals)
@@ -22,6 +29,7 @@ function concat(a::Tuple, b::Tuple)
 end
 
 val2val{d}(::Type{Val{d}}) = d
+type2type{T}(::Type{Type{T}}) = T
 
 # produces subsequences of a:b of length l,
 # sorted in lexicographic order
@@ -46,10 +54,21 @@ end
 # I have a "rootleaf" that will say each kind of simplex is in fact a simplex,
 # then just provide the spatial dimension on "simplex".  I can do the same for
 # other kinds, I hope.
-getSpatialDimension{T}(::Type{Simplex{T}}) = val2val(T)
-getSpatialDimension{S}(::Type{S}) = getSpatialDimension(rootleaf(S))
+spatialDimension{T}(::Type{Simplex{T}}) = val2val(T)
+spatialDimension{S}(::Type{S}) = spatialDimension(rootleaf(S))
+@generated function spatialDimension{C1,C2}(::Type{TensorProductCell{C1,C2}})
+    d = spatialDimension(C1) + spatialDimension(C2)
+    return :($d)
+end
 
 rootleaf{T}(::Type{UFCSimplex{T}}) = Simplex{T}
+
+getNumVertices{T}(::Type{Simplex{T}}) = 1 + val2val(T)
+getNumVertices{S}(::Type{S}) = getNumVertices(rootleaf(S))
+function getNumVertices{C1,C2}(::Type{TensorProductCell{C1,C2}})
+    return getNumVertices(C1) * getNumVertices(C2)
+end
+
 
 # this is generated since it's once per type, so can
 # compute array at compile-time and return it at run-time.
@@ -81,5 +100,65 @@ end
     return :($D)
 end
 
+@generated function getVertexCoords{C1,C2}(::Type{TensorProductCell{C1,C2}})
+    coords1 = getVertexCoords(C1)
+    coords2 = getVertexCoords(C2)
+
+    sdim1 = spatialDimension(C1)
+    sdim2 = spatialDimension(C2)
+    sdim = sdim1 + sdim2
+    verts1 = getVertexCoords(C1)
+    verts2 = getVertexCoords(C2)
+    nverts1 = getNumVertices(C1)
+    nverts2 = getNumVertices(C2)
+
+    nverts = nverts1 * nverts2
+
+    verts = zeros(sdim, nverts)
+    vert_cur = 1
+    for i=1:nverts2
+        verts[(sdim1+1):(sdim1+sdim2),vert_cur] = verts2[:,i]
+        for j=1:nverts1
+            verts[1:sdim1,vert_cur] = verts1[:,j]
+            vert_cur += 1
+        end
+    end
+
+    return :($verts)
+end
+
+# Note, internal facets may need to get swizzled to be in right order?
+@generated function getCellTopology{C1,C2}(typ::Type{TensorProductCell{C1,C2}})
+    D = Dict()
+    D1 = getCellTopology(C1)
+    D2 = getCellTopology(C2)
+    println(typ,type2type(typ))
+    nv = getNumVertices(type2type(typ))
+    sd1 = spatialDimension(C1)
+    sd2 = spatialDimension(C2)
+    sd = spatialDimension(type2type(typ))
+    D[0] = [(i,) for i=1:nv]
+    
+    for k2 in keys(D2)
+        for k1 in keys(D1)
+            dim_cur = k1+k2
+            if !haskey(D, dim_cur)
+                D[dim_cur] = []
+            end
+            if dim_cur > 0 && dim_cur < sd
+                for f1 in D2[k2]
+                    for f2 in D1[k1]
+                        push!(D[dim_cur], (f1,f2))
+                    end
+                end
+            end
+        end
+    end
+
+    D[sd] = [ntuple((i)->i, sd)]
+
+    return :($D)
+
+end
 
 end

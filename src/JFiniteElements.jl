@@ -3,6 +3,9 @@ module JFiniteElements
 using Bases, Cells, PointSets
 export Bases, Cells, PointSets
 
+using Bernstein
+export Bernstein
+
 
 export Triangulation, boxMesh, poissontri
 
